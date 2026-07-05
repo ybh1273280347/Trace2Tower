@@ -6,13 +6,13 @@ import re
 from pathlib import Path
 from typing import Any
 
-from trace2tower.agent_factory import build_agent
 from trace2tower.config import load_config
-from trace2tower.env_factory import build_env
 from trace2tower.evaluation import Evaluator
-from trace2tower.execution import run_episodes
+from trace2tower.factories.agent import build_agent
+from trace2tower.factories.env import build_env
+from trace2tower.factories.pipeline import build_retriever, build_segmenter
 from trace2tower.io import read_json, write_json, write_jsonl, write_jsonl_dicts
-from trace2tower.registry import build_retriever, build_segmenter
+from trace2tower.runtime.execution import run_episodes
 
 
 def build_parser() -> argparse.ArgumentParser:

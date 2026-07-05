@@ -8,6 +8,7 @@ from .base import BaseRetriever
 
 
 class NoSkillRetriever(BaseRetriever):
+    # 空检索器：用于 no-skill baseline，保证接口一致。
     def retrieve(self, model: dict, task_state: dict) -> list[dict]:
         return []
 
@@ -18,6 +19,7 @@ class ScoreBasedRetriever(BaseRetriever):
         self.k = k
 
     def retrieve(self, model: dict, task_state: dict) -> list[dict]:
+        # 为每个技能计算当前 task_state 下的分数，返回前 k 个。
         scored = []
         for skill in model.get("skills", []):
             item = dict(skill)
@@ -37,6 +39,7 @@ class ScoreBasedRetriever(BaseRetriever):
 
 
 def score_skill(strategy: str, skill: dict[str, Any], task_state: dict[str, Any]) -> float:
+    # 根据策略名称把技能元数据或任务相似度映射为一个标量分数。
     metadata = skill.get("metadata", {})
     if strategy in {"frequency", "topk"}:
         return float(metadata.get("support", len(skill.get("members", []))) or 0.0)
@@ -65,6 +68,7 @@ def _pue_score(
     use_recent: bool = True,
     use_similarity: bool = True,
 ) -> float:
+    # PUE (Predictive Utility Estimation) 风格的启发式分数，可解释且易于消融。
     metadata = skill.get("metadata", {})
     support = float(metadata.get("support", 0.0) or 0.0)
     cost = float(metadata.get("token_cost", 0.0) or 0.0)
@@ -94,10 +98,12 @@ def _pue_score(
 
 
 def _similarity_score(skill: dict[str, Any], task_state: dict[str, Any]) -> float:
+    # 基于词袋余弦相似度，衡量技能内容与当前任务状态的相关性。
     return cosine_text_similarity(_skill_text(skill), _task_state_text(task_state))
 
 
 def _skill_text(skill: dict[str, Any]) -> str:
+    # 把技能的多字段文本拼成单一字符串用于相似度计算。
     return "\n".join(
         [
             str(skill.get("name", "")),
@@ -109,6 +115,7 @@ def _skill_text(skill: dict[str, Any]) -> str:
 
 
 def _task_state_text(task_state: dict[str, Any]) -> str:
+    # 把目标、环境名和最近几个片段的 label/text 拼成查询文本。
     pieces = [
         str(task_state.get("goal", "")),
         str(task_state.get("env", "")),

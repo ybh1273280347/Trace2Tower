@@ -9,7 +9,7 @@ class Evaluator:
     metrics: list[str] = field(default_factory=list)
 
     def summarize(self, trajectories: list[dict]) -> dict:
-        # 这里先给平台 smoke 使用；正式实验指标可以继续往这个 summary 里追加。
+        # 计算一组轨迹的核心指标：成功率、步数、奖励、无效动作率、循环率、LLM 成本等。
         success_count = sum(1 for item in trajectories if item["success"])
         total = len(trajectories) or 1
         avg_steps = sum(len(item["steps"]) for item in trajectories) / total
@@ -45,6 +45,7 @@ class Evaluator:
         }
 
     def _is_invalid_step(self, step: dict) -> bool:
+        # 优先使用环境显式标记的 valid_action；否则从观测文本中匹配常见无效提示。
         info = step.get("info", {})
         if "valid_action" in info:
             return not bool(info["valid_action"])
@@ -61,6 +62,7 @@ class Evaluator:
         )
 
     def _loop_count(self, steps: list[dict]) -> int:
+        # 统计连续两步动作相同的次数，作为循环/抖动行为的代理指标。
         return sum(
             1
             for previous, current in zip(steps, steps[1:])

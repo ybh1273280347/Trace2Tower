@@ -30,16 +30,60 @@ cd ~/papers/Trace2Tower
 
 ```bash
 cd ~/papers/Trace2Tower
-.tools/bin/micromamba run -p .envs/trace2tower-py38 python -m trace2tower.run \
+.tools/bin/micromamba run -p .envs/trace2tower-py38 python -m trace2tower.runtime.run \
   --config configs/baseline_skillx_webshop.json
 ```
 
 ```bash
 cd ~/papers/Trace2Tower
-.tools/bin/micromamba run -p .envs/trace2tower-py38 python -m trace2tower.run \
+.tools/bin/micromamba run -p .envs/trace2tower-py38 python -m trace2tower.runtime.run \
   --config configs/baseline_skilllens_webshop.json
 ```
 
 ## 输出文件
 
 每次运行会在 `runtime.output_dir` 下写出 `trajectories.jsonl`、`records.jsonl`、`segments.jsonl`、`model.json`、`retrieval.jsonl`、`deployment_retrieval.jsonl` 和 `summary.json`。Official baseline 的原始输入、日志和官方输出保存在对应实验目录下的 miner 子目录。
+
+## 统一实验流水线
+
+共享训练 segments 上跑多个 miner：
+
+```bash
+.tools/bin/micromamba run -p .envs/trace2tower-py38 python scripts/mine_skill_models.py \
+  configs/baseline_skillx_webshop.json \
+  configs/baseline_skilllens_webshop.json \
+  --segments experiments/baseline_no_skill_webshop/segments.jsonl \
+  --records experiments/baseline_no_skill_webshop/records.jsonl \
+  --output-root experiments/current_baselines/models
+```
+
+同一 LLM agent 下部署对比：
+
+```bash
+.tools/bin/micromamba run -p .envs/trace2tower-py38 python scripts/deploy_skill_models.py \
+  --config configs/llm_skillx_webshop.json \
+  --output-root experiments/current_baselines/deployment \
+  --include-no-skill \
+  --models \
+  skillx=experiments/current_baselines/models/baseline_skillx_webshop/model.json \
+  skilllens=experiments/current_baselines/models/baseline_skilllens_webshop/model.json
+```
+
+pandas 生成对比表：
+
+```bash
+.tools/bin/micromamba run -p .envs/trace2tower-py38 python scripts/analyze_experiment_table.py \
+  experiments/current_baselines \
+  --output-dir experiments/current_baselines/analysis
+```
+
+想把三步串起来，用：
+
+```bash
+.tools/bin/micromamba run -p .envs/trace2tower-py38 python scripts/run_experiment_suite.py \
+  --segments experiments/baseline_no_skill_webshop/segments.jsonl \
+  --records experiments/baseline_no_skill_webshop/records.jsonl \
+  --miner-configs configs/baseline_skillx_webshop.json configs/baseline_skilllens_webshop.json \
+  --deployment-config configs/llm_skillx_webshop.json \
+  --output-root experiments/current_baselines
+```

@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Any
 
 from trace2tower.config import load_config
+from trace2tower.factories.pipeline import build_miner, build_retriever
 from trace2tower.io import write_json, write_jsonl_dicts
-from trace2tower.registry import build_miner, build_retriever
 
 
 def build_parser() -> argparse.ArgumentParser:

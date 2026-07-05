@@ -5,8 +5,12 @@
     "num_products": 1000
   },
   "agent": {
-    "name": "smoke_random",
-    "seed": 7
+    "name": "llm_action",
+    "temperature": 0.0,
+    "max_tokens": 128,
+    "max_skill_chars": 0,
+    "max_retries": 6,
+    "retry_delay": 2.0
   },
   "segmenter": {
     "name": "rule"

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import argparse
 
-from .config import load_config
-from .execution import run_episodes
-from .io import read_json, write_json, write_jsonl, write_jsonl_dicts
-from .registry import build_pipeline_bundle
+from trace2tower.config import load_config
+from trace2tower.factories.pipeline import build_pipeline_bundle
+from trace2tower.io import read_json, write_json, write_jsonl, write_jsonl_dicts
+from trace2tower.runtime.execution import run_episodes
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -19,6 +19,8 @@ def run_once(config_path: str) -> None:
     # 主流水线：构造组件 -> 采集轨迹 -> 切分 -> 离线挖掘 -> 检索演示 -> 汇总并落盘。
     config = load_config(config_path)
     bundle = build_pipeline_bundle(config)
+
+    # 若指定了 skill_model_path，则使用离线预训练技能模型做部署阶段检索。
     deployment_model = _load_deployment_model(config.skill_model_path)
     episode_output = run_episodes(
         env=bundle.env,
@@ -35,7 +37,9 @@ def run_once(config_path: str) -> None:
     segment_records = episode_output["segments"]
     deployment_retrieval_records = episode_output["deployment_retrieval"]
 
+    # 用收集到的片段离线挖掘技能模型；该模型可用于后续独立检索实验。
     model = bundle.miner.mine(segment_records)
+    # 对每条轨迹，使用同一个挖掘后的模型做一次检索演示，结果写入 retrieval.jsonl。
     retrieval_records = [
         {
             "task_id": raw["task_id"],
@@ -74,6 +78,7 @@ def run_once(config_path: str) -> None:
 
 
 def _load_deployment_model(path):
+    # 辅助函数：空路径表示不使用离线模型，避免在调用处写冗长条件。
     if not path:
         return None
     return read_json(path)

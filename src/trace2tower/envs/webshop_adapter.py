@@ -58,6 +58,7 @@ class WebShopAdapter(BaseEnv):
         raw_actions = self._env.get_available_actions()
         actions: list[str] = []
         if raw_actions.get("has_search_bar"):
+            # 有搜索框时提供一个基于任务指令的默认搜索动作。
             actions.append(f"search[{self._search_query()}]")
         actions.extend(f"click[{item}]" for item in raw_actions.get("clickables", []))
         return actions

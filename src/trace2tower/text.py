@@ -10,10 +10,12 @@ _ASIN_PATTERN = re.compile(r"^b0[a-z0-9]{8}$")
 
 
 def tokenize(text: str) -> list[str]:
+    # 统一转小写并按字母数字切分，用于文本相似度和 token 计数。
     return _TOKEN_PATTERN.findall(text.lower())
 
 
 def cosine_text_similarity(left: str, right: str) -> float:
+    # 基于词袋的余弦相似度，用于技能与当前任务状态的文本匹配。
     left_counts = Counter(tokenize(left))
     right_counts = Counter(tokenize(right))
     if not left_counts or not right_counts:
@@ -29,6 +31,7 @@ def cosine_text_similarity(left: str, right: str) -> float:
 
 
 def action_template(action: str) -> str:
+    # 把原始动作字符串归约成模板标签，用于统计动作分布和粗粒度事件标签。
     action = action.strip().lower()
     if action.startswith("search["):
         return "search_query"
@@ -47,6 +50,7 @@ def action_template(action: str) -> str:
 
 
 def compact_counter(counter: Counter[str], limit: int = 5) -> list[dict[str, object]]:
+    # 把 Counter 转成可序列化的前 limit 项列表，写入技能 metadata。
     return [
         {
             "value": value,
@@ -57,6 +61,7 @@ def compact_counter(counter: Counter[str], limit: int = 5) -> list[dict[str, obj
 
 
 def _webshop_click_template(target: str) -> str:
+    # 根据 WebShop 常见点击目标进一步细分动作语义。
     if _ASIN_PATTERN.match(target):
         return "click_product"
     if target in {"description", "features", "reviews"}:

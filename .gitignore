@@ -3,11 +3,9 @@
 .venv/
 .tools/
 experiments/
-.external/*
-!.external/baselines/
-.external/baselines/*
-!.external/baselines/BASELINES.md
+docs/
 
 __pycache__/
 *.py[cod]
 *.egg-info/
+.external/

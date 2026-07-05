@@ -8,6 +8,7 @@ from .base import BaseSegmenter
 class RuleSegmenter(BaseSegmenter):
     def segment(self, trajectory: dict[str, Any]) -> list[dict[str, Any]]:
         # 先按动作模板做最小切分，后续可以替换成 LLM 切分或更细的规则切分。
+        # 目前每步生成一个 segment，保留足够元数据供后续统计使用。
         return [
             {
                 "segment_id": f"{trajectory['task_id']}_seg_{step['t']}",
@@ -47,6 +48,7 @@ class RuleSegmenter(BaseSegmenter):
         return action.split("[", 1)[0]
 
     def _segment_text(self, trajectory: dict[str, Any], step: dict[str, Any]) -> str:
+        # 把动作、观测、目标、结果拼成自然语言文本，作为技能内容和检索查询的素材。
         observation = step.get("observation", "")
         return "\n".join(
             [

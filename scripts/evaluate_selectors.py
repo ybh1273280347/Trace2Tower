@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 
 from trace2tower.config import load_config
-from trace2tower.registry import build_miner
+from trace2tower.factories.pipeline import build_miner
 from trace2tower.text import action_template, tokenize
 
 
@@ -28,7 +28,7 @@ DEFAULT_SELECTORS = [
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, help="Experiment config whose miner should be evaluated.")
-    parser.add_argument("--records", required=True, help="records.jsonl produced by trace2tower.run.")
+    parser.add_argument("--records", required=True, help="records.jsonl produced by trace2tower.runtime.run.")
     parser.add_argument("--output-dir", required=True, help="Directory for selector metrics.")
     parser.add_argument("--future-ratio", type=float, default=0.4)
     parser.add_argument("--top-k", type=int, default=3)

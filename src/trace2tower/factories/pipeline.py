@@ -1,21 +1,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
-from .agent_factory import build_agent
-from .env_factory import build_env
-from .evaluation import Evaluator
-from .mining import (
-    BaseMiner,
+from trace2tower.evaluation import Evaluator
+from trace2tower.factories.agent import build_agent
+from trace2tower.factories.env import build_env
+from trace2tower.mining import (
     FlatSkillSummaryMiner,
     NoSkillMiner,
     RawTrajectoryMiner,
     SkillLensOfficialMiner,
     SkillXOfficialMiner,
 )
-from .retrieval import BaseRetriever, NoSkillRetriever, ScoreBasedRetriever, TopKRetriever
-from .segmentation import BaseSegmenter, RuleSegmenter
+from trace2tower.retrieval import BaseRetriever, NoSkillRetriever, ScoreBasedRetriever, TopKRetriever
+from trace2tower.segmentation import BaseSegmenter, RuleSegmenter
 
 
 @dataclass
@@ -24,7 +23,7 @@ class PipelineBundle:
     env: object
     agent: object
     segmenter: BaseSegmenter
-    miner: BaseMiner
+    miner: Any
     retriever: BaseRetriever
     evaluator: Evaluator
 
@@ -42,6 +41,7 @@ def build_pipeline_bundle(config: object) -> PipelineBundle:
     agent = build_agent(config.agent_name, config.agent_config)
     segmenter = build_segmenter(config.segmenter_name, config.segmenter_config)
     miner_config = dict(config.miner_config)
+    # 把输出目录传给矿工，方便 official baseline 写入中间文件和日志。
     miner_config.setdefault("runtime_output_dir", str(config.output_dir))
     miner = build_miner(config.miner_name, miner_config)
     retriever = build_retriever(config.retriever_name, config.retriever_config)
@@ -57,14 +57,16 @@ def build_pipeline_bundle(config: object) -> PipelineBundle:
 
 
 def build_segmenter(name: str, config: Optional[dict] = None) -> BaseSegmenter:
+    # 当前只有基于规则的切分器；后续可扩展 LLM-based 切分。
     if name == "rule":
         return RuleSegmenter()
     raise ValueError(f"Unsupported segmenter: {name}")
 
 
-def build_miner(name: str, config: Optional[dict] = None) -> BaseMiner:
+def build_miner(name: str, config: Optional[dict] = None) -> Any:
+    # 按名称分发到具体技能挖掘器；official baseline 需要配置项来定位外部仓库。
     settings = config or {}
-    miners: dict[str, BaseMiner] = {
+    miners: dict[str, Any] = {
         "no_skill": NoSkillMiner(),
         "raw_trajectory": RawTrajectoryMiner(),
         "flat_skill_summary": FlatSkillSummaryMiner(),
@@ -78,6 +80,7 @@ def build_miner(name: str, config: Optional[dict] = None) -> BaseMiner:
 
 
 def build_retriever(name: str, config: Optional[dict] = None) -> BaseRetriever:
+    # 根据策略名称选择检索器；所有 score-based 策略共用 ScoreBasedRetriever。
     settings = config or {}
     top_k = int(settings.get("top_k", 3))
     if name == "none":

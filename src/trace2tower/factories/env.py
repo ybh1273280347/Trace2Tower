@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .envs.alfworld_adapter import build_alfworld_env
-from .envs.base import BaseEnv
-from .envs.webshop_adapter import build_webshop_env
+from trace2tower.envs.alfworld_adapter import build_alfworld_env
+from trace2tower.envs.base import BaseEnv
+from trace2tower.envs.webshop_adapter import build_webshop_env
 
 
 def build_env(
@@ -24,6 +24,7 @@ def build_env(
             data_dir=alfworld_data_dir,
         )
     if name == "webshop":
+        # WebShop 默认加载 1000 个商品；num_products 为空时给出合理默认值。
         return build_webshop_env(
             mode=mode,
             num_products=num_products or 1000,

@@ -10,6 +10,7 @@ requires-python = ">=3.8,<3.9"
 dependencies = [
   "networkx>=2.8,<3.2",
   "numpy>=1.22,<1.25",
+  "pandas>=1.4,<2",
   "requests>=2.27,<3",
   "tqdm>=4.64,<5",
 ]

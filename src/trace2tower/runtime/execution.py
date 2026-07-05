@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .schemas import StepRecord, TrajectoryRecord
+from trace2tower.core.models import StepRecord, TrajectoryRecord
 
 
 def run_episodes(
@@ -16,6 +16,7 @@ def run_episodes(
     max_steps: int,
     deployment_model: dict[str, Any] | None = None,
 ) -> dict[str, list]:
+    # 运行若干 episode，采集完整轨迹并切分为片段；同时可选做部署阶段技能检索。
     trajectories: list[TrajectoryRecord] = []
     raw_records: list[dict[str, Any]] = []
     segment_records: list[dict[str, Any]] = []
@@ -23,6 +24,7 @@ def run_episodes(
 
     for episode in range(episodes):
         observation, info = env.reset()
+        # 从不同环境的初始观测中提取统一的目标描述。
         goal = extract_goal(env_name, observation)
         steps: list[StepRecord] = []
         recent_actions: list[str] = []
@@ -33,6 +35,7 @@ def run_episodes(
 
         while not done and t < max_steps:
             t += 1
+            # 若存在离线技能模型，每步先检索相关技能并注入 agent。
             retrieved_skills = retrieve_deployment_skills(
                 model=deployment_model,
                 retriever=retriever,
@@ -42,6 +45,7 @@ def run_episodes(
                 recent_actions=recent_actions,
             )
             if retrieved_skills:
+                # 记录每步实际检索到的技能，用于后续可解释性分析。
                 deployment_retrieval_records.append(
                     {
                         "task_id": task_id,
@@ -56,6 +60,7 @@ def run_episodes(
             action = agent.act(observation, agent_info)
             observation, reward, done, info = env.step(action)
             step_info = dict(info)
+            # 把 agent 的元数据（如 LLM token 消耗、是否 fallback）挂到对应 step。
             agent_metadata = getattr(agent, "last_metadata", {})
             if agent_metadata:
                 step_info["agent"] = agent_metadata
@@ -98,6 +103,7 @@ def run_episodes(
                 for step in steps
             ],
         }
+        # 对单条轨迹进行切分，并把 segment 列表挂回 raw record。
         segments = segmenter.segment(raw)
         raw["segments"] = segments
         raw_records.append(raw)
@@ -120,8 +126,10 @@ def retrieve_deployment_skills(
     observation: str,
     recent_actions: list[str],
 ) -> list[dict[str, Any]]:
+    # 没有离线模型时直接返回空列表，保持 agent 接口一致。
     if not model:
         return []
+    # 只取最近 5 个动作作为短期上下文，避免上下文过长冲淡目标相似度。
     return retriever.retrieve(
         model,
         {
@@ -135,6 +143,7 @@ def retrieve_deployment_skills(
 
 
 def extract_goal(env_name: str, observation: str) -> str:
+    # 针对不同 benchmark 的初始观测格式提取用户目标。
     if env_name == "webshop" and "Instruction:" in observation:
         tail = observation.split("Instruction:", 1)[1]
         parts = [
@@ -145,4 +154,5 @@ def extract_goal(env_name: str, observation: str) -> str:
         return parts[0] if parts else ""
     if env_name == "alfworld":
         return observation.split("\n", 1)[0].strip()
+    # 未知环境默认取前 200 个字符作为目标兜底。
     return observation[:200]

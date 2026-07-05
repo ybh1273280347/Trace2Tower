@@ -24,7 +24,7 @@ def main() -> None:
             [
                 args.python,
                 "-m",
-                "trace2tower.run",
+                "trace2tower.runtime.run",
                 "--config",
                 str(config_path),
             ],

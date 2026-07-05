@@ -31,6 +31,7 @@ def build_alfworld_env(
 
 
 def _load_alfworld_config(config_path: Optional[str], data_dir: Optional[str]) -> dict:
+    # 解析 yaml 配置并设置 ALFWORLD_DATA 环境变量；支持相对路径和 env var 展开。
     project_root = Path.cwd()
     config_file = Path(config_path or "configs/alfworld/base_config.yaml")
     if not config_file.is_absolute():
@@ -51,6 +52,7 @@ def _load_alfworld_config(config_path: Optional[str], data_dir: Optional[str]) -
 
 
 def _expand_env_vars(value):
+    # 递归展开配置中的 $VAR 形式环境变量。
     if isinstance(value, dict):
         return {key: _expand_env_vars(item) for key, item in value.items()}
     if isinstance(value, list):
