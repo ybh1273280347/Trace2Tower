@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trace2tower"
+version = "0.1.0"
+description = "Trace2Tower experiment skeleton"
+requires-python = ">=3.8,<3.9"
+dependencies = [
+  "networkx>=2.8,<3.2",
+  "numpy>=1.22,<1.25",
+  "requests>=2.27,<3",
+  "tqdm>=4.64,<5",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

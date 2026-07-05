@@ -1,0 +1,32 @@
+{
+  "env": {
+    "name": "alfworld",
+    "mode": "text"
+  },
+  "agent": {
+    "name": "smoke_random",
+    "seed": 7
+  },
+  "segmenter": {
+    "name": "rule"
+  },
+  "miner": {
+    "name": "no_skill"
+  },
+  "retriever": {
+    "name": "none",
+    "top_k": 0
+  },
+  "evaluator": {
+    "metrics": [
+      "success_rate",
+      "step_count",
+      "invalid_action_rate"
+    ]
+  },
+  "runtime": {
+    "episodes": 5,
+    "max_steps": 50,
+    "output_dir": "experiments/alfworld_text_only"
+  }
+}

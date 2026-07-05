@@ -1,0 +1,13 @@
+.env
+.envs/
+.venv/
+.tools/
+experiments/
+.external/*
+!.external/baselines/
+.external/baselines/*
+!.external/baselines/BASELINES.md
+
+__pycache__/
+*.py[cod]
+*.egg-info/

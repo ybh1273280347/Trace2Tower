@@ -1,0 +1,46 @@
+{
+  "env": {
+    "name": "webshop",
+    "mode": "text",
+    "num_products": 1000
+  },
+  "agent": {
+    "name": "llm_action",
+    "temperature": 0.0,
+    "max_tokens": 128,
+    "max_skill_chars": 0
+  },
+  "segmenter": {
+    "name": "rule"
+  },
+  "miner": {
+    "name": "skillx_official",
+    "python": ".envs/baselines-py312/bin/python",
+    "external_root": ".external/baselines/SkillX",
+    "benchmark": "appworld",
+    "skill_type": "hybrid",
+    "epochs": 1,
+    "threshold": 0.999,
+    "batch_size": 4,
+    "max_concurrent": 2,
+    "plan_strategy": "shortest",
+    "filter_timing": "pre_merge"
+  },
+  "retriever": {
+    "name": "similarity",
+    "top_k": 3
+  },
+  "evaluator": {
+    "metrics": [
+      "success_rate",
+      "reward",
+      "step_count",
+      "shortcut_rate"
+    ]
+  },
+  "runtime": {
+    "episodes": 3,
+    "max_steps": 30,
+    "output_dir": "experiments/baseline_skillx_webshop"
+  }
+}

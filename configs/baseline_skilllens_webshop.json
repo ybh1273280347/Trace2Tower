@@ -1,0 +1,46 @@
+{
+  "env": {
+    "name": "webshop",
+    "mode": "text",
+    "num_products": 1000
+  },
+  "agent": {
+    "name": "llm_action",
+    "temperature": 0.0,
+    "max_tokens": 128,
+    "max_skill_chars": 0
+  },
+  "segmenter": {
+    "name": "rule"
+  },
+  "miner": {
+    "name": "skilllens_official",
+    "python": ".envs/baselines-py312/bin/python",
+    "external_root": ".external/baselines/SkillLens",
+    "benchmark": "webshop",
+    "run_name": "baseline_skilllens_webshop",
+    "api_style": "chat",
+    "method": "parallel",
+    "max_skills": 8,
+    "batch_size": 0,
+    "merge_group_size": 4,
+    "max_concurrency": 4
+  },
+  "retriever": {
+    "name": "similarity",
+    "top_k": 3
+  },
+  "evaluator": {
+    "metrics": [
+      "success_rate",
+      "reward",
+      "step_count",
+      "shortcut_rate"
+    ]
+  },
+  "runtime": {
+    "episodes": 3,
+    "max_steps": 30,
+    "output_dir": "experiments/baseline_skilllens_webshop"
+  }
+}
