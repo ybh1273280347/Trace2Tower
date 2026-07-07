@@ -1,8 +1,9 @@
 {
   "env": {
-    "name": "webshop",
+    "name": "alfworld",
     "mode": "text",
-    "num_products": 1000
+    "alfworld_config_path": "configs/alfworld/base_config.yaml",
+    "alfworld_data_dir": ".external/alfworld"
   },
   "agent": {
     "name": "llm_action",
@@ -16,23 +17,23 @@
     "name": "rule"
   },
   "miner": {
-    "name": "raw_trajectory"
+    "name": "no_skill"
   },
   "retriever": {
-    "name": "similarity",
-    "top_k": 3
+    "name": "none",
+    "top_k": 0
   },
   "evaluator": {
     "metrics": [
       "success_rate",
       "reward",
       "step_count",
-      "shortcut_rate"
+      "token_cost"
     ]
   },
   "runtime": {
     "episodes": 3,
     "max_steps": 30,
-    "output_dir": "experiments/baseline_raw_trajectory_webshop"
+    "output_dir": "experiments/baseline_no_skill_alfworld"
   }
 }

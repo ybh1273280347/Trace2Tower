@@ -27,8 +27,13 @@
     "filter_timing": "pre_merge"
   },
   "retriever": {
-    "name": "similarity",
-    "top_k": 3
+    "name": "embedding_pue_full",
+    "top_k": 3,
+    "embedding_timeout": 120,
+    "embedding_max_retries": 6,
+    "embedding_retry_delay": 2.0,
+    "embedding_batch_size": 8,
+    "embedding_batch_delay": 0.5
   },
   "evaluator": {
     "metrics": [

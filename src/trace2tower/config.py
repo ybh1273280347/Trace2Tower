@@ -67,7 +67,7 @@ class RunConfig:
     # ---------- 技能挖掘器配置 ----------
     @property
     def miner_name(self) -> str:
-        # 例如 no_skill / raw_trajectory / flat_skill_summary / skillx_official。
+        # 例如 trace2tower / skillx_official / skilllens_official / no_skill。
         return self.raw["miner"]["name"]
 
     @property

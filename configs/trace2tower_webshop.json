@@ -14,21 +14,30 @@
     "name": "rule"
   },
   "miner": {
-    "name": "skilllens_official",
-    "python": ".envs/baselines-py312/bin/python",
-    "external_root": ".external/baselines/SkillLens",
-    "benchmark": "webshop",
-    "run_name": "baseline_skilllens_webshop",
-    "api_style": "chat",
-    "method": "parallel",
-    "max_skills": 8,
-    "batch_size": 0,
-    "merge_group_size": 4,
-    "max_concurrency": 4
+    "name": "trace2tower",
+    "semantic_top_k": 8,
+    "semantic_weight": 0.45,
+    "transition_weight": 0.35,
+    "outcome_weight": 0.2,
+    "contrastive_lambda": 0.65,
+    "spectral_rank": 6,
+    "min_mid_clusters": 2,
+    "max_mid_clusters": 8,
+    "random_state": 13,
+    "embedding_timeout": 120,
+    "embedding_max_retries": 6,
+    "embedding_retry_delay": 2.0,
+    "embedding_batch_size": 8,
+    "embedding_batch_delay": 0.5
   },
   "retriever": {
     "name": "embedding_pue_full",
-    "top_k": 3,
+    "top_k": 6,
+    "level_top_k": {
+      "high": 1,
+      "mid": 2,
+      "low": 3
+    },
     "embedding_timeout": 120,
     "embedding_max_retries": 6,
     "embedding_retry_delay": 2.0,
@@ -40,12 +49,12 @@
       "success_rate",
       "reward",
       "step_count",
-      "shortcut_rate"
+      "token_cost"
     ]
   },
   "runtime": {
     "episodes": 3,
     "max_steps": 30,
-    "output_dir": "experiments/baseline_skilllens_webshop"
+    "output_dir": "experiments/trace2tower_webshop"
   }
 }

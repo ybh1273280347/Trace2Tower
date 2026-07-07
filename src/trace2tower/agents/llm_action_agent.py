@@ -17,8 +17,11 @@ class LLMActionAgent(BaseAgent):
         self.last_metadata: dict[str, Any] = {}
 
     def act(self, observation: str, info: dict[str, Any]) -> str:
-        # 获取当前可用动作；若环境未提供则使用 noop 占位，避免后续索引错误。
-        actions = info.get("admissible_actions") or ["noop"]
+        # 真实部署必须由环境给出合法动作集合；缺失时直接中止实验。
+        actions = info.get("admissible_actions") or []
+        if not actions:
+            raise RuntimeError("LLM action agent requires non-empty admissible_actions.")
+
         messages = [
             {
                 "role": "system",
@@ -36,18 +39,17 @@ class LLMActionAgent(BaseAgent):
         ]
         result = self.client.chat(messages)
         action = self._parse_action(result.content, actions)
-        # 若 LLM 输出无法匹配任何合法动作，则回退到第一个可用动作并记录。
-        fallback = action is None
-        if fallback:
-            action = actions[0]
-
         self.last_metadata = {
             "llm_response": result.content,
-            "llm_action_fallback": fallback,
             "prompt_tokens": result.prompt_tokens,
             "completion_tokens": result.completion_tokens,
             "total_tokens": result.total_tokens,
         }
+        if action is None:
+            raise RuntimeError(
+                "LLM returned no admissible JSON action: "
+                f"{result.content[:500]}"
+            )
         return action
 
     def _system_prompt(self) -> str:
@@ -99,14 +101,10 @@ class LLMActionAgent(BaseAgent):
         return "\n\n".join(blocks)
 
     def _parse_action(self, text: str, actions: list[str]) -> str | None:
-        # 优先解析严格 JSON；失败后尝试在 LLM 输出中查找任意合法动作字符串。
+        # 只接受严格 JSON，避免把解释文本中的动作字符串误当作真实选择。
         parsed = self._parse_json_action(text)
         if parsed in actions:
             return parsed
-
-        for action in actions:
-            if action in text:
-                return action
         return None
 
     def _parse_json_action(self, text: str) -> str:

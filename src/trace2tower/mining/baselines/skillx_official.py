@@ -275,12 +275,17 @@ def _skills_from_skillx(
             ]
         )
         members = segments_for_sources([task], segments)
+        if not members:
+            raise OfficialBaselineError(
+                "SkillX planning skill cannot be mapped back to Trace2Tower segments: "
+                f"task={task}, output={output_path}"
+            )
         skills.append(
             build_skill(
                 skill_id=f"skillx_official_planning_{index:03d}",
                 name=f"Planning {task}",
                 granularity="planning",
-                segments=members or segments,
+                segments=members,
                 all_segment_count=len(segments),
                 source_method="skillx_official",
                 content=content,
@@ -295,6 +300,12 @@ def _skills_from_skillx(
             metadata = item.get("metadata", {})
             members = segments_for_sources(metadata.get("source_tasks", []), segments)
             name = str(item.get("name") or f"{granularity.title()} Skill {index}")
+            if not members:
+                raise OfficialBaselineError(
+                    "SkillX skill cannot be mapped back to Trace2Tower segments: "
+                    f"name={name}, granularity={granularity}, "
+                    f"source_tasks={metadata.get('source_tasks', [])}, output={output_path}"
+                )
             content = "\n".join(
                 [
                     str(item.get("document", "")),
@@ -307,7 +318,7 @@ def _skills_from_skillx(
                     skill_id=f"skillx_official_{granularity}_{index:03d}",
                     name=name,
                     granularity=granularity,
-                    segments=members or segments,
+                    segments=members,
                     all_segment_count=len(segments),
                     source_method="skillx_official",
                     content=content,
@@ -315,7 +326,6 @@ def _skills_from_skillx(
                         "official_output_path": str(output_path),
                         "skillx_metadata": metadata,
                         "skillx_tools": item.get("tools", []),
-                        "source_match": "source_tasks" if members else "fallback_all_segments",
                     },
                 )
             )

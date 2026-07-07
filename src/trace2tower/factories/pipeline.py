@@ -7,11 +7,10 @@ from trace2tower.evaluation import Evaluator
 from trace2tower.factories.agent import build_agent
 from trace2tower.factories.env import build_env
 from trace2tower.mining import (
-    FlatSkillSummaryMiner,
     NoSkillMiner,
-    RawTrajectoryMiner,
     SkillLensOfficialMiner,
     SkillXOfficialMiner,
+    Trace2TowerMiner,
 )
 from trace2tower.retrieval import BaseRetriever, NoSkillRetriever, ScoreBasedRetriever, TopKRetriever
 from trace2tower.segmentation import BaseSegmenter, RuleSegmenter
@@ -64,14 +63,13 @@ def build_segmenter(name: str, config: Optional[dict] = None) -> BaseSegmenter:
 
 
 def build_miner(name: str, config: Optional[dict] = None) -> Any:
-    # 按名称分发到具体技能挖掘器；official baseline 需要配置项来定位外部仓库。
+    # 按名称分发到具体技能挖掘器；只保留论文实验需要的真实方法和 no-skill 控制组。
     settings = config or {}
     miners: dict[str, Any] = {
         "no_skill": NoSkillMiner(),
-        "raw_trajectory": RawTrajectoryMiner(),
-        "flat_skill_summary": FlatSkillSummaryMiner(),
         "skillx_official": SkillXOfficialMiner(settings),
         "skilllens_official": SkillLensOfficialMiner(settings),
+        "trace2tower": Trace2TowerMiner(settings),
     }
     try:
         return miners[name]
@@ -92,12 +90,21 @@ def build_retriever(name: str, config: Optional[dict] = None) -> BaseRetriever:
         "success_rate",
         "historical_success_rate",
         "similarity",
+        "embedding_similarity",
         "recent_reward_lift",
         "pue",
         "pue_full",
+        "embedding_pue",
+        "embedding_pue_full",
         "pue_no_cost",
         "pue_no_recent",
         "pue_no_similarity",
     }:
-        return ScoreBasedRetriever(strategy=name, k=top_k)
+        return ScoreBasedRetriever(
+            strategy=name,
+            k=top_k,
+            use_embedding_similarity=name.startswith("embedding_"),
+            embedding_config=settings,
+            level_top_k=settings.get("level_top_k"),
+        )
     raise ValueError(f"Unsupported retriever: {name}")

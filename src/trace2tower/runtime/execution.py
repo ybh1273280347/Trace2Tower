@@ -44,13 +44,15 @@ def run_episodes(
                 observation=observation,
                 recent_actions=recent_actions,
             )
-            if retrieved_skills:
+            retrieval_metadata = getattr(retriever, "last_metadata", {})
+            if retrieved_skills or retrieval_metadata:
                 # 记录每步实际检索到的技能，用于后续可解释性分析。
                 deployment_retrieval_records.append(
                     {
                         "task_id": task_id,
                         "step": t,
                         "retrieved_skills": retrieved_skills,
+                        "retrieval_metadata": retrieval_metadata,
                     }
                 )
 
@@ -60,7 +62,9 @@ def run_episodes(
             action = agent.act(observation, agent_info)
             observation, reward, done, info = env.step(action)
             step_info = dict(info)
-            # 把 agent 的元数据（如 LLM token 消耗、是否 fallback）挂到对应 step。
+            # 把 agent 的元数据（如 LLM token 消耗）挂到对应 step。
+            if retrieval_metadata:
+                step_info["retrieval"] = retrieval_metadata
             agent_metadata = getattr(agent, "last_metadata", {})
             if agent_metadata:
                 step_info["agent"] = agent_metadata

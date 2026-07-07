@@ -1,6 +1,12 @@
 # Trace2Tower
 
-面向 ALFWorld / WebShop 的实验骨架。当前重点是让真实环境、轨迹采集、切分、官方 baseline 接入、检索和评测闭环跑通；Trace2Tower 主算法还没有实现。
+面向 ALFWorld / WebShop 的 Trace2Tower 实验平台。当前代码已经把 Trace2Tower 主算法落在 `src/trace2tower/mining/`：
+
+- `trace2tower.py`：算法入口，串起 embedding、图构造、谱分解和技能塔诱导。
+- `graph.py`：构造语义相似性、时序转移、成败一致性三类边权，并生成成功/失败对比图。
+- `spectral.py`：执行 contrastive EigenTrace 谱分解和中层技能聚类。
+- `tower.py`：诱导 low / mid / high 三层技能塔。
+- `refinement.py`：根据部署反馈执行 downweight、split、merge、promote。
 
 ## 环境变量
 
@@ -17,7 +23,8 @@ LLM_EMBEDDING_MODEL=...
 
 ## Baseline 状态
 
-- `no_skill`、`raw_trajectory`、`flat_skill_summary`：本地基础对照。
+- `trace2tower`：Transition-Aware Contrastive EigenTrace 主算法。
+- `no_skill`：无技能控制组。
 - `skillx_official`：调用 `.external/baselines/SkillX` 官方代码；embedding 使用 `LLM_BASE_URL` 同源服务和 `LLM_EMBEDDING_MODEL`。
 - `skilllens_official`：调用 `.external/baselines/SkillLens` 官方 `skilllens extract`。
 
@@ -44,9 +51,9 @@ cd ~/papers/Trace2Tower
 
 每次运行会在 `runtime.output_dir` 下写出 `trajectories.jsonl`、`records.jsonl`、`segments.jsonl`、`model.json`、`retrieval.jsonl`、`deployment_retrieval.jsonl` 和 `summary.json`。Official baseline 的原始输入、日志和官方输出保存在对应实验目录下的 miner 子目录。
 
-## 统一实验流水线
+## RQ 实验流水线
 
-共享训练 segments 上跑多个 miner：
+已有共享训练 segments 后，可以单独跑多个 miner：
 
 ```bash
 .tools/bin/micromamba run -p .envs/trace2tower-py38 python scripts/mine_skill_models.py \
@@ -77,13 +84,19 @@ pandas 生成对比表：
   --output-dir experiments/current_baselines/analysis
 ```
 
-想把三步串起来，用：
+想把采集共享训练集、采矿、selector 评估、部署和分析串起来，用：
 
 ```bash
 .tools/bin/micromamba run -p .envs/trace2tower-py38 python scripts/run_experiment_suite.py \
-  --segments experiments/baseline_no_skill_webshop/segments.jsonl \
-  --records experiments/baseline_no_skill_webshop/records.jsonl \
-  --miner-configs configs/baseline_skillx_webshop.json configs/baseline_skilllens_webshop.json \
-  --deployment-config configs/llm_skillx_webshop.json \
-  --output-root experiments/current_baselines
+  --train-config configs/baseline_no_skill_webshop.json \
+  --miner-configs configs/trace2tower_webshop.json configs/baseline_skillx_webshop.json configs/baseline_skilllens_webshop.json \
+  --deployment-config configs/llm_trace2tower_webshop.json \
+  --output-root experiments/trace2tower_suite
 ```
+
+suite 会生成：
+
+- `models/`：同一批 segments 下的各 miner `model.json`。
+- `selectors/`：RQ1/RQ2/RQ4 的 PUE 与 heuristic selector 指标。
+- `deployment/`：RQ3 的同一 agent/env 部署对比与 `refined_model.json`。
+- `analysis/`：pandas 汇总表和图。

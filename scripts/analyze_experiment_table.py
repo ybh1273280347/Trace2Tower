@@ -15,9 +15,16 @@ RUN_MARKDOWN_COLUMNS = [
     "success_rate",
     "avg_reward",
     "avg_steps",
+    "avg_total_token_cost",
     "avg_token_cost",
+    "avg_retrieval_embedding_token_cost",
     "success_per_1k_tokens",
     "skill_count",
+    "refined_skill_count",
+    "split_child_count",
+    "merged_skill_count",
+    "promoted_high_skill_count",
+    "reinforced_high_skill_count",
     "avg_skill_token_cost",
     "avg_skill_support",
     "avg_retrieved_skills",
@@ -54,9 +61,16 @@ DISPLAY_COLUMNS = {
     "success_rate": "SR (%)",
     "avg_reward": "Reward",
     "avg_steps": "Steps",
-    "avg_token_cost": "Tok.",
+    "avg_total_token_cost": "Tok.",
+    "avg_token_cost": "LLM Tok.",
+    "avg_retrieval_embedding_token_cost": "Emb. Tok.",
     "success_per_1k_tokens": "SR/1k Tok.",
     "skill_count": "#Skill",
+    "refined_skill_count": "#Refined",
+    "split_child_count": "Split",
+    "merged_skill_count": "Merge",
+    "promoted_high_skill_count": "Promote",
+    "reinforced_high_skill_count": "Reinforce",
     "avg_skill_token_cost": "Skill Tok.",
     "avg_skill_support": "Supp.",
     "avg_retrieved_skills": "Ret.",
@@ -84,6 +98,11 @@ PERCENT_COLUMNS = {
 INTEGER_COLUMNS = {
     "episodes",
     "skill_count",
+    "refined_skill_count",
+    "split_child_count",
+    "merged_skill_count",
+    "promoted_high_skill_count",
+    "reinforced_high_skill_count",
     "future_records",
     "batch_index",
 }
@@ -95,15 +114,13 @@ DISPLAY_VALUES = {
     },
     "method": {
         "no_skill": "No Skill",
-        "raw_trajectory": "Raw Traj.",
-        "flat_skill_summary": "Flat Skill",
+        "trace2tower": "Trace2Tower",
         "skillx_official": "SkillX",
         "skilllens_official": "SkillLens",
     },
     "model_method": {
         "no_skill": "No Skill",
-        "raw_trajectory": "Raw Traj.",
-        "flat_skill_summary": "Flat Skill",
+        "trace2tower": "Trace2Tower",
         "skillx_official": "SkillX",
         "skilllens_official": "SkillLens",
     },
@@ -298,6 +315,7 @@ def _run_row(experiment_dir: Path) -> tuple[dict[str, Any], list[dict[str, Any]]
     method = row.get("deployment_model_method") or row.get("model_method") or model.get("method", "")
     row["method"] = method
     _merge_model_stats(row, model)
+    _merge_refinement_stats(row, experiment_dir / "refined_model.json")
     row["official_output_path"] = model.get("metadata", {}).get("official_output_path", "")
     row.setdefault("avg_retrieved_skills", _avg_retrieved(experiment_dir / "retrieval.jsonl"))
     row.setdefault(
@@ -327,6 +345,7 @@ def _model_summary_row(model_dir: Path) -> tuple[dict[str, Any], list[dict[str, 
     method = row.get("method") or model.get("method", "")
     row["method"] = method
     _merge_model_stats(row, model)
+    _merge_refinement_stats(row, model_dir / "refined_model.json")
     row["official_output_path"] = (
         row.get("official_output_path")
         or model.get("metadata", {}).get("official_output_path", "")
@@ -450,6 +469,19 @@ def _merge_model_stats(row: dict[str, Any], model: dict[str, Any]) -> None:
     row.setdefault("avg_skill_coverage", _mean(coverages))
 
 
+def _merge_refinement_stats(row: dict[str, Any], refined_model_path: Path) -> None:
+    if not refined_model_path.exists():
+        return
+    refined = _read_json(refined_model_path)
+    refinement = refined.get("metadata", {}).get("refinement", {})
+    structural = refinement.get("structural_updates", {})
+    row["refined_skill_count"] = len(refined.get("skills", []))
+    row["split_child_count"] = structural.get("split_child_count", 0)
+    row["merged_skill_count"] = structural.get("merged_skill_count", 0)
+    row["promoted_high_skill_count"] = structural.get("promoted_high_skill_count", 0)
+    row["reinforced_high_skill_count"] = structural.get("reinforced_high_skill_count", 0)
+
+
 def _write_dataframe_set(
     *,
     output_dir: Path,
@@ -501,19 +533,33 @@ def _write_latex(path: Path, frame: pd.DataFrame, *, columns: list[str]) -> None
         return
 
     selected = [column for column in columns if column in frame.columns] if columns else list(frame.columns)
-    view = frame[selected]
-    column_spec = "l" + "r" * max(len(selected) - 1, 0)
-    lines = [
-        "\\begin{tabular}{" + column_spec + "}",
-        "\\toprule",
-        " & ".join(_latex_escape(_display_column(column)) for column in selected) + " \\\\",
-        "\\midrule",
+    view = _latex_view(frame, selected)
+    headers = {
+        column: _latex_escape(_display_column(column))
+        for column in selected
+    }
+    column_format = "".join("S" if _latex_numeric_column(frame, column) else "l" for column in selected)
+    formatters = {
+        headers[column]: _latex_number_formatter(column)
+        for column in selected
+        if _latex_numeric_column(frame, column)
+    }
+    latex = (
+        view.rename(columns=headers)
+        .style
+        .hide(axis="index")
+        .format(formatters, na_rep="", escape="latex")
+        .to_latex(
+            hrules=True,
+            siunitx=True,
+            column_format=column_format,
+        )
+    )
+    preamble = [
+        "% Requires: \\usepackage{booktabs}",
+        "% Numeric columns use siunitx S alignment: \\usepackage{siunitx}",
     ]
-    for _, row in view.iterrows():
-        cells = [_latex_escape(_markdown_cell(row[column], column=column)) for column in selected]
-        lines.append(" & ".join(cells) + " \\\\")
-    lines.extend(["\\bottomrule", "\\end{tabular}", ""])
-    path.write_text("\n".join(lines), encoding="utf-8")
+    path.write_text("\n".join(preamble) + "\n" + latex, encoding="utf-8")
 
 
 def _records(frame: pd.DataFrame) -> list[dict[str, Any]]:
@@ -521,6 +567,38 @@ def _records(frame: pd.DataFrame) -> list[dict[str, Any]]:
         return []
     clean = frame.astype(object).where(pd.notnull(frame), None)
     return clean.to_dict(orient="records")
+
+
+def _latex_view(frame: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    frame = frame.reset_index(drop=True)
+    view = pd.DataFrame()
+    for column in columns:
+        if _latex_numeric_column(frame, column):
+            values = pd.to_numeric(frame[column], errors="coerce")
+            if column in PERCENT_COLUMNS:
+                values = values * 100.0
+            view[column] = values
+        else:
+            view[column] = [
+                _display_value(column, value) or str(value).replace("\n", " ")
+                for value in frame[column]
+            ]
+    return view
+
+
+def _latex_numeric_column(frame: pd.DataFrame, column: str) -> bool:
+    if column in DISPLAY_VALUES:
+        return False
+    values = pd.to_numeric(frame[column], errors="coerce")
+    return bool(values.notna().any())
+
+
+def _latex_number_formatter(column: str) -> str:
+    if column in PERCENT_COLUMNS:
+        return "{:.1f}"
+    if column in INTEGER_COLUMNS:
+        return "{:.0f}"
+    return "{:.3g}"
 
 
 def _avg_retrieved(path: Path) -> float:
@@ -532,7 +610,9 @@ def _avg_retrieved(path: Path) -> float:
 
 
 def _success_per_1k_tokens(row: dict[str, Any]) -> float:
-    token_cost = _float(row.get("avg_token_cost", 0.0))
+    token_cost = _float(row.get("avg_total_token_cost", 0.0))
+    if token_cost <= 0:
+        token_cost = _float(row.get("avg_token_cost", 0.0))
     if token_cost <= 0:
         return 0.0
     return 1000.0 * _float(row.get("success_rate", 0.0)) / token_cost

@@ -1,0 +1,61 @@
+{
+  "env": {
+    "name": "alfworld",
+    "mode": "text",
+    "alfworld_config_path": "configs/alfworld/base_config.yaml",
+    "alfworld_data_dir": ".external/alfworld"
+  },
+  "agent": {
+    "name": "llm_action",
+    "temperature": 0.0,
+    "max_tokens": 128,
+    "max_skill_chars": 0
+  },
+  "segmenter": {
+    "name": "rule"
+  },
+  "miner": {
+    "name": "trace2tower",
+    "semantic_top_k": 8,
+    "semantic_weight": 0.45,
+    "transition_weight": 0.35,
+    "outcome_weight": 0.2,
+    "contrastive_lambda": 0.65,
+    "spectral_rank": 6,
+    "min_mid_clusters": 2,
+    "max_mid_clusters": 8,
+    "random_state": 13,
+    "embedding_timeout": 120,
+    "embedding_max_retries": 6,
+    "embedding_retry_delay": 2.0,
+    "embedding_batch_size": 8,
+    "embedding_batch_delay": 0.5
+  },
+  "retriever": {
+    "name": "embedding_pue_full",
+    "top_k": 6,
+    "level_top_k": {
+      "high": 1,
+      "mid": 2,
+      "low": 3
+    },
+    "embedding_timeout": 120,
+    "embedding_max_retries": 6,
+    "embedding_retry_delay": 2.0,
+    "embedding_batch_size": 8,
+    "embedding_batch_delay": 0.5
+  },
+  "evaluator": {
+    "metrics": [
+      "success_rate",
+      "reward",
+      "step_count",
+      "token_cost"
+    ]
+  },
+  "runtime": {
+    "episodes": 3,
+    "max_steps": 30,
+    "output_dir": "experiments/trace2tower_alfworld"
+  }
+}

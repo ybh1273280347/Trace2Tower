@@ -40,20 +40,22 @@ def main() -> None:
         retrieval_records = []
         if records:
             retriever = build_retriever(config.retriever_name, config.retriever_config)
-            retrieval_records = [
-                {
-                    "task_id": record.get("task_id"),
-                    "retrieved_skills": retriever.retrieve(
-                        model,
-                        {
-                            "goal": record.get("goal", ""),
-                            "env": record.get("env", ""),
-                            "segments": record.get("segments", []),
-                        },
-                    ),
-                }
-                for record in records
-            ]
+            for record in records:
+                retrieved_skills = retriever.retrieve(
+                    model,
+                    {
+                        "goal": record.get("goal", ""),
+                        "env": record.get("env", ""),
+                        "segments": record.get("segments", []),
+                    },
+                )
+                retrieval_records.append(
+                    {
+                        "task_id": record.get("task_id"),
+                        "retrieved_skills": retrieved_skills,
+                        "retrieval_metadata": getattr(retriever, "last_metadata", {}),
+                    }
+                )
             write_jsonl_dicts(model_dir / "retrieval.jsonl", retrieval_records)
 
         summary = _model_summary(
@@ -81,6 +83,10 @@ def _model_summary(
     token_costs = [float(skill.get("metadata", {}).get("token_cost", 0.0) or 0.0) for skill in skills]
     supports = [float(skill.get("metadata", {}).get("support", 0.0) or 0.0) for skill in skills]
     retrieved_counts = [len(record.get("retrieved_skills", [])) for record in retrieval_records]
+    retrieval_embedding_costs = [
+        float(record.get("retrieval_metadata", {}).get("embedding_total_tokens", 0.0) or 0.0)
+        for record in retrieval_records
+    ]
     return {
         "config": str(config_path),
         "model_dir": str(model_dir),
@@ -92,6 +98,7 @@ def _model_summary(
         "total_skill_token_cost": sum(token_costs),
         "avg_skill_support": _mean(supports),
         "avg_retrieved_skills": _mean(retrieved_counts),
+        "avg_retrieval_embedding_token_cost": _mean(retrieval_embedding_costs),
         "official_output_path": model.get("metadata", {}).get("official_output_path", ""),
     }
 

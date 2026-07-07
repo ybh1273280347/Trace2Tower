@@ -26,11 +26,10 @@ class Evaluator:
             for item in trajectories
             for step in item["steps"]
         )
-        llm_fallbacks = sum(
-            1
+        retrieval_token_cost = sum(
+            int(step.get("info", {}).get("retrieval", {}).get("embedding_total_tokens", 0) or 0)
             for item in trajectories
             for step in item["steps"]
-            if step.get("info", {}).get("agent", {}).get("llm_action_fallback")
         )
         loop_rate = sum(self._loop_count(item["steps"]) for item in trajectories) / total_steps
         return {
@@ -41,7 +40,8 @@ class Evaluator:
             "invalid_action_rate": invalid_actions / total_steps,
             "loop_rate": loop_rate,
             "avg_token_cost": token_cost / total,
-            "llm_action_fallback_rate": llm_fallbacks / total_steps,
+            "avg_retrieval_embedding_token_cost": retrieval_token_cost / total,
+            "avg_total_token_cost": (token_cost + retrieval_token_cost) / total,
         }
 
     def _is_invalid_step(self, step: dict) -> bool:

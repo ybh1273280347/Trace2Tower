@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from .base import (
+    OfficialBaselineError,
     OfficialBaselineMiner,
     build_skill,
     final_reward,
@@ -187,6 +188,12 @@ def _skill_from_skilllens(
     sources = item.get("source_trajectories", [])
     members = segments_for_sources(sources, segments)
     name = str(item.get("name") or f"SkillLens Skill {index}")
+    if not members:
+        raise OfficialBaselineError(
+            "SkillLens output skill cannot be mapped back to Trace2Tower segments: "
+            f"name={name}, source_trajectories={sources}, output={output_path}"
+        )
+
     content = "\n".join(
         [
             str(item.get("description", "")),
@@ -199,14 +206,13 @@ def _skill_from_skilllens(
         skill_id=f"skilllens_official_{index:03d}",
         name=name,
         granularity="skilllens_skill",
-        segments=members or segments,
+        segments=members,
         all_segment_count=len(segments),
         source_method="skilllens_official",
         content=content,
         extra_metadata={
             "official_output_path": str(output_path),
             "source_trajectories": sources,
-            "source_match": "source_trajectories" if members else "fallback_all_segments",
         },
     )
 
@@ -226,4 +232,3 @@ def _named_blocks(title: str, blocks: Any) -> str:
         else:
             pieces.append(f"- {block}")
     return "\n".join(pieces)
-

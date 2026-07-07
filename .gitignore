@@ -4,8 +4,8 @@
 .tools/
 experiments/
 docs/
+.external/
 
 __pycache__/
 *.py[cod]
 *.egg-info/
-.external/

@@ -1,8 +1,9 @@
 {
   "env": {
-    "name": "webshop",
+    "name": "alfworld",
     "mode": "text",
-    "num_products": 1000
+    "alfworld_config_path": "configs/alfworld/base_config.yaml",
+    "alfworld_data_dir": ".external/alfworld"
   },
   "agent": {
     "name": "llm_action",
@@ -20,7 +21,12 @@
   },
   "retriever": {
     "name": "embedding_pue_full",
-    "top_k": 3,
+    "top_k": 6,
+    "level_top_k": {
+      "high": 1,
+      "mid": 2,
+      "low": 3
+    },
     "embedding_timeout": 120,
     "embedding_max_retries": 6,
     "embedding_retry_delay": 2.0,
@@ -38,7 +44,7 @@
   "runtime": {
     "episodes": 1,
     "max_steps": 10,
-    "skill_model_path": "experiments/baseline_skillx_webshop/model.json",
-    "output_dir": "experiments/llm_skillx_webshop"
+    "skill_model_path": "experiments/trace2tower_alfworld/model.json",
+    "output_dir": "experiments/llm_trace2tower_alfworld"
   }
 }

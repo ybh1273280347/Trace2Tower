@@ -9,9 +9,14 @@ description = "Trace2Tower experiment skeleton"
 requires-python = ">=3.8,<3.9"
 dependencies = [
   "networkx>=2.8,<3.2",
+  "matplotlib>=3.5,<3.8",
   "numpy>=1.22,<1.25",
   "pandas>=1.4,<2",
   "requests>=2.27,<3",
+  "SciencePlots>=2.1,<2.2",
+  "scikit-learn>=1.1,<1.4",
+  "scipy>=1.8,<1.11",
+  "seaborn>=0.12,<0.14",
   "tqdm>=4.64,<5",
 ]
 
